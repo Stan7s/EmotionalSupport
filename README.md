@@ -18,7 +18,7 @@ pip install transformers==3.3.1
 - 6 files. `.source` as input, `.target` as ground truth.
 - Full data path (CRC): `/afs/crc/group/dmsquare/vol5/ltong2/EmotionalSupport/data/reddit/comments/bart_dataset/full_m`
 - Toy data path (CRC): `/afs/crc/group/dmsquare/vol5/ltong2/EmotionalSupport/data/reddit/comments/bart_dataset/toy_m`
-- Put all 6 files under `data/`
+- Put all 6 files under `data/{dataset_name}/` (same as `--data_dir` in .sh)
 
 ### RUN
 ```
