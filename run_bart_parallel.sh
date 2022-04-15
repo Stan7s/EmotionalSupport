@@ -1,6 +1,6 @@
 CUDA_VISIBLE_DEVICES=0,1 /afs/crc.nd.edu/user/l/ltong2/.conda/envs/bart/bin/python3.6 \
     -m torch.distributed.launch --nproc_per_node=2 finetune.py \
-    --data_dir /afs/crc/group/dmsquare/vol5/ltong2/EmotionalSupport/data/reddit/comments/bart_dataset/toy_m \
+    --data_dir data/toy_m \
     --model_name_or_path facebook/bart-base \
     --output_dir finetuned_esp/toy_m \
     --num_train_epochs 50 \
