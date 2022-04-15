@@ -2,10 +2,9 @@
 NLP for Social Media Emotional Support
 
 
-## BART
+## Fine-tuning BART 
 
 ### Environment
-
 - python 3.6
 - pytorch 1.7
 - transformers 3.3.1
@@ -17,8 +16,7 @@ pip install pytorch==1.7
 pip install transformers==3.3.1
 ```
 
-### data
-
+### Data
 - 6 files. `.source` as input, `.target` as ground truth.
 - Full data path (CRC): `/afs/crc/group/dmsquare/vol5/ltong2/EmotionalSupport/data/reddit/comments/bart_dataset/full_m`
 - Toy data path (CRC): `/afs/crc/group/dmsquare/vol5/ltong2/EmotionalSupport/data/reddit/comments/bart_dataset/toy_m`
