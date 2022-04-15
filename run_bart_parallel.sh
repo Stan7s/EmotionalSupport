@@ -1,11 +1,3 @@
-#!/bin/bash
-#$ -M ltong2@nd.edu
-#$ -m abe
-#$ -q gpu@qa-2080ti-006
-#$ -pe smp 1
-#$ -l gpu=1
-
-
 CUDA_VISIBLE_DEVICES=0,1 /afs/crc.nd.edu/user/l/ltong2/.conda/envs/bart/bin/python3.6 \
     -m torch.distributed.launch --nproc_per_node=2 finetune.py \
     --data_dir /afs/crc/group/dmsquare/vol5/ltong2/EmotionalSupport/data/reddit/comments/bart_dataset/toy_m \
