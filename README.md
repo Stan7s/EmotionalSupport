@@ -23,5 +23,5 @@ pip install transformers==3.3.1
 ### RUN
 ```
 conda activate bart
-bash scripts/run_bart_parallel.sh
+bash run_bart_parallel.sh
 ```
