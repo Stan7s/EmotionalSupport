@@ -1,6 +1,4 @@
 # EmotionalSupport
-NLP for Social Media Emotional Support
-
 
 ## Fine-tuning BART 
 
