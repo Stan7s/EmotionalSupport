@@ -405,13 +405,13 @@ class Seq2SeqTrainer(Trainer):
             if self.args.past_index >= 0:
                 self._past = None
             epoch_loss = torch.tensor(0.0).to(self.args.device)
-            # epoch_pbar = tqdm(epoch_iterator, desc="Iteration", disable=disable_tqdm)
+            epoch_pbar = tqdm(epoch_iterator, desc="Iteration", disable=disable_tqdm)
             for step, inputs in enumerate(epoch_iterator):
                 
                 # Skip past any already trained steps if resuming training
                 if steps_trained_in_current_epoch > 0:
                     steps_trained_in_current_epoch -= 1
-                    # epoch_pbar.update(1)   
+                    epoch_pbar.update(1)   
                     continue
 
                 '''
@@ -451,33 +451,33 @@ class Seq2SeqTrainer(Trainer):
                     self.global_step += 1
                     self.epoch = epoch + (step + 1) / len(epoch_iterator)
 
-                # epoch_pbar.update(1)
+                epoch_pbar.update(1)
                 if self.args.max_steps > 0 and self.global_step >= self.args.max_steps:
                     break
-            # epoch_pbar.close()
+            epoch_pbar.close()
             train_pbar.update(1)
             with open(self.args.output_dir + "/epoch_tr_loss.txt", 'a') as f_loss:
                 f_loss.write("epoch {} loss {}\n".format(epoch, epoch_loss))
             tr_loss += epoch_loss
             
             if epoch < int(np.ceil(num_train_epochs)):
-                # Prediction
-                output = self.predict(test_dataset=self.test_dataset)
-                metrics = output.metrics
-                predictions = output.predictions.tolist()
-                with open(self.args.output_dir + '/test_output_epoch_{}.txt'.format(epoch+1), 'w') as epoch_out:
-                    for pred in predictions:
-                        epoch_out.write(self.tokenizer.decode(pred,
-                                                              skip_special_tokens=True,
-                                                              clean_up_tokenization_spaces=False)
-                                                              + '\n')
+                # # Prediction
+                # output = self.predict(test_dataset=self.test_dataset)
+                # metrics = output.metrics
+                # predictions = output.predictions.tolist()
+                # with open(self.args.output_dir + '/test_output_epoch_{}.txt'.format(epoch+1), 'w') as epoch_out:
+                #     for pred in predictions:
+                #         epoch_out.write(self.tokenizer.decode(pred,
+                #                                               skip_special_tokens=True,
+                #                                               clean_up_tokenization_spaces=False)
+                #                                               + '\n')
 
-                with open(self.args.output_dir + '/epoch_test.json', 'a') as epoch_eval:
-                    json.dump(metrics, epoch_eval, indent=1)
+                # with open(self.args.output_dir + '/epoch_test.json', 'a') as epoch_eval:
+                #     json.dump(metrics, epoch_eval, indent=1)
 
-                logger.info("***** Test results *****")
-                for key, value in metrics.items():
-                    logger.info("  %s = %s", key, value)
+                # logger.info("***** Test results *****")
+                # for key, value in metrics.items():
+                #     logger.info("  %s = %s", key, value)
 
                 # Evaluation
                 output = self.evaluate()
@@ -499,10 +499,6 @@ class Seq2SeqTrainer(Trainer):
                 self._report_to_hp_search(trial, epoch, metrics)
                 if self.args.load_best_model_at_end and epoch > 0 and epoch % 5 == 0:
                     self._save_training(model, trial, metrics=metrics)
-
-
-
-
 
             if self.args.tpu_metrics_debug or self.args.debug:
                 if is_torch_tpu_available():

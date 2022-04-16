@@ -149,7 +149,7 @@ class DataTrainingArguments:
     )
 
     n_train: Optional[int] = field(default=-1, metadata={"help": "# training examples. -1 means use all."})
-    n_val: Optional[int] = field(default=-1, metadata={"help": "# validation examples. -1 means use all."})
+    n_val: Optional[int] = field(default=10000, metadata={"help": "# validation examples. -1 means use all."})
     n_test: Optional[int] = field(default=-1, metadata={"help": "# test examples. -1 means use all."})
     src_lang: Optional[str] = field(default=None, metadata={"help": "Source language id for translation."})
     tgt_lang: Optional[str] = field(default=None, metadata={"help": "Target language id for translation."})
