@@ -1,13 +1,3 @@
-#  Copyright (c) Microsoft Corporation. 
-#  Licensed under the MIT license. 
-import torch
-import logging
-
-import numpy as np
-
-from pycocoevalcap.bleu.bleu import Bleu
-from collections import defaultdict
-
 import json
 from os.path import abspath, dirname, exists, join
 import argparse
@@ -30,70 +20,13 @@ import pandas as pd
 from pytorch_pretrained_bert import GPT2LMHeadModel, GPT2Tokenizer, GPT2Config
 from gpt2_training.train_utils import get_eval_list_same_length, load_model, boolean_string, fix_state_dict_namespace
 
-from nlgeval import NLGEval
-
+logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+                    datefmt = '%m/%d/%Y %H:%M:%S',
+                    level = logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 EOS_ID = 50256
-
-
-def cal_BLEU_4(generated, reference, is_corpus=False):
-    BLEUscore = [0.0, 0.0, 0.0, 0.0]
-    for idx, g in enumerate(generated):
-        if is_corpus:
-            score, scores = Bleu(4).compute_score(reference, {0: [g]})
-        else:
-            score, scores = Bleu(4).compute_score({0: [reference[0][idx]]},
-                                                  {0: [g]})
-        for i, s in zip([0, 1, 2, 3], score):
-            BLEUscore[i] += s
-    BLEUscore[0] = BLEUscore[0]/len(generated)
-    BLEUscore[1] = BLEUscore[1]/len(generated)
-    BLEUscore[2] = BLEUscore[2]/len(generated)
-    BLEUscore[3] = BLEUscore[3]/len(generated)
-    return BLEUscore
-
-
-def cal_entropy(generated):
-    etp_score = [0.0, 0.0, 0.0, 0.0]
-    div_score = [0.0, 0.0, 0.0, 0.0]
-    counter = [defaultdict(int), defaultdict(int),
-               defaultdict(int), defaultdict(int)]
-    for gg in generated:
-        g = gg.rstrip().split()
-        for n in range(4):
-            for idx in range(len(g)-n):
-                ngram = ' '.join(g[idx:idx+n+1])
-                counter[n][ngram] += 1
-    for n in range(4):
-        total = sum(counter[n].values()) + 1e-10
-        for v in counter[n].values():
-            etp_score[n] += - (v+0.0) / total * (np.log(v+0.0) - np.log(total))
-        div_score[n] = (len(counter[n].values())+0.0) / total
-    return etp_score, div_score
-
-
-def eval_model_loss(model, tokenizer, eval_dataloader, epoch_id, args):
-    # use the same signature with eval_model_generation
-    logger.info('compute eval model loss, using eval mode, '
-                'please change it back to train after calling this function')
-    model.eval()
-    tot_loss = []
-    tot_ppl = []
-    tot_sample = []
-    with torch.no_grad():
-        for step, batch in enumerate(eval_dataloader):
-            batch = tuple(t.to(args.device) for t in batch)
-            input_ids, position_ids, token_ids, label_ids, src_len, _ = batch
-            if args.no_token_id:
-                token_ids = None
-            n_sample = input_ids.shape[0]
-            loss, ppl = model(input_ids, position_ids, token_ids, label_ids)
-            tot_loss.append(loss.mean().item() * n_sample)
-            tot_ppl.append(ppl.mean().item() * n_sample)
-            tot_sample.append(n_sample)
-    print(f"\n Epoch {epoch_id}: Val loss {np.sum(tot_loss) / np.sum(tot_sample)} Val ppl {np.sum(tot_ppl) / np.sum(tot_sample)} ")
-    return np.sum(tot_loss) / np.sum(tot_sample), np.sum(tot_ppl) / np.sum(tot_sample)
 
 
 def cut_seq_to_eos(sentence, remove_id=[-1]):
@@ -178,39 +111,95 @@ def cut_seq_to_eos(sentence, remove_id=[-1]):
             break
     return sent
 
-def predict(model, enc, args, pred_filename):
-    logger.info('predicting...')
+
+def run_model():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model_name_or_path', type=str, default='', help='pretrained model name or path to local checkpoint')
+    parser.add_argument('--pred_data', type=str, default='', help='.tsv data file path for perdiction')
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--load_checkpoint", '-c', type=str, default='')
+    parser.add_argument("--fp16", type=boolean_string, default=False)
+    parser.add_argument("--max_seq_length", type=int, default=256)
+    
+    parser.add_argument("--generation_length", type=int, default=64)
+    parser.add_argument("--max_history", type=int, default=2)
+
+    parser.add_argument("--temperature", type=float, default=1)
+    parser.add_argument("--top_k", type=int, default=0)
+    parser.add_argument("--top_p", type=float, default=0.9)
+
+    parser.add_argument('--use_gpu', action='store_true')
+    parser.add_argument("--gpu", type=int, default=0)
+
+    args = parser.parse_args()
+    os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
+
+    print('Saving to', args.load_checkpoint[:-4] + '.pred.tsv')
+
+    print(torch.cuda.is_available(), args.use_gpu)
+    device = torch.device("cuda" if torch.cuda.is_available() and args.use_gpu else "cpu")
+    n_gpu = torch.cuda.device_count()
+    args.device, args.n_gpu = device, n_gpu
+    print(args.device, args.n_gpu)
+
+    np.random.seed(args.seed)
+    torch.random.manual_seed(args.seed)
+    torch.cuda.manual_seed(args.seed)
+
+    #### load the GPT-2 model 
+    config = GPT2Config.from_json_file(os.path.join(args.model_name_or_path, 'config.json'))
+    enc = GPT2Tokenizer.from_pretrained(args.model_name_or_path)
+    model = load_model(GPT2LMHeadModel(config), args.load_checkpoint, args, verbose=True)
+    model.to(device)
     model.eval()
-    df = pd.read_csv(args.pred_input_file, header = None, sep = '\t')
-    source_list = df.iloc[:, 0].to_list()
-    target_list = df.iloc[:, 1].to_list()
-    print(source_list[0:5])
-    print(target_list[0:5])
 
-    pred_target_list = []
+    df = pd.read_csv(args.pred_data, header = None, sep = '\t')
+    source = df.iloc[:, 0].to_list()
+    target = df.iloc[:, 1].to_list()
+    print(source[0:5])
+    print(target[0:5])
 
-    for id, source in enumerate(source_list):
+    pred_target = []
+
+    for id, raw_text in enumerate(source):
         print(id)
-        context_tokens = enc.encode(source) + [EOS_ID]
-        context_tokens = torch.tensor(context_tokens, device=args.device, dtype=torch.long).unsqueeze(0)
+        history = []
+        history.append(raw_text)
+        print([enc.encode(h) + [EOS_ID] for h in history])
+        context_tokens = sum([enc.encode(h) + [EOS_ID] for h in history],[]) #+ [EOS_ID]
+        print(context_tokens)
+        context_tokens = torch.tensor(context_tokens, device=device, dtype=torch.long).unsqueeze(0)
         position_ids = torch.arange(0, context_tokens.size(-1), dtype=torch.long, device=context_tokens.device)
 
         out = generate_sequence(model, context_tokens, position_ids=position_ids,
-                                length=args.max_seq_length, temperature=args.pred_temperature, 
+                                length=args.generation_length, temperature=args.temperature, 
                                 top_k=args.top_k, top_p= args.top_p) 
 
-        out = out.tolist()                     
-        pred_target = enc.decode(cut_seq_to_eos(out[0])).encode('ascii','ignore').decode('ascii')
-        pred_target_list.append(pred_target)
+        out = out.tolist()
+        # full_text = enc.decode(out[0]).encode('ascii','ignore').decode('ascii')                       
+        text = enc.decode(cut_seq_to_eos(out[0])).encode('ascii','ignore').decode('ascii')
+        # print('SOURCE:', source[id], '\nGOLDEN:', target[id], '\nPRED:', text, '\nFULL_PRED:', full_text, '\n')
+        # history.append(text)
+        # history = history[-(2*args.max_history+1):]
+
+        pred_target.append(text)
+    df['pred_target'] = pred_target
+    df.to_csv(args.load_checkpoint[:-4] + '.pred.tsv', sep = '\t', index = False)
+
+    with open(args.load_checkpoint[:-4] + '.pred.txt', 'w') as fw:
+        fw.write('\n'.join(pred_target))
+    with open(args.load_checkpoint[:-4] + '.true.txt', 'w') as fw:
+        fw.write('\n'.join(target))
+
+
+if __name__ == '__main__':
     
-    df['pred_target'] = pred_target_list
-    df.to_csv(pred_filename + '.pred.tsv', sep = '\t', index = False)
 
-    n = NLGEval(metrics_to_omit=['SkipThoughtCS', 'EmbeddingAverageCosineSimilarity', 'VectorExtremaCosineSimilarity','GreedyMatchingScore'])
-    metrics_dict = n.compute_metrics([target_list], pred_target_list)
+    logging.basicConfig(
+        format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+        datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO
+    )
+    logger = logging.getLogger(__name__)
 
-    with open(pred_filename + '.nlgeval.txt', 'w') as f: 
-        for key, value in metrics_dict.items(): 
-            f.write('%s:%s\n' % (key, value))
-
+    run_model()
 

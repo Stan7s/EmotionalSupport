@@ -22,7 +22,7 @@ from torch.distributed import get_rank, get_world_size
 
 from lsp_model import GPT2LMHeadModel, GPT2Tokenizer, GPT2Config, Adam
 from gpt2_training.train_utils import load_model, boolean_string, set_lr, get_eval_list_same_length
-from gpt2_training.eval_utils import eval_model_loss
+from gpt2_training.eval_utils import eval_model_loss, predict
 
 from data_loader import BucketingDataLoader, DynamicBatchingLoader, DistributedBucketingDataLoader
 
@@ -43,6 +43,8 @@ EVAL_STEP = 100000
 # Prepare Parser
 ##########################################################################
 
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--model_name_or_path', type=str,
                     help='pretrained model name or path to local checkpoint')
@@ -54,6 +56,8 @@ parser.add_argument("--skip_eval", action='store_true',
 parser.add_argument("--init_checkpoint", type=str)
 parser.add_argument("--train_input_file", type=str)
 parser.add_argument("--eval_input_file", type=str)
+parser.add_argument("--pred_input_file", type=str)
+
 parser.add_argument("--continue_from", type=int, default=0)
 
 parser.add_argument("--train_batch_size", type=int, default=4,
@@ -76,6 +80,10 @@ parser.add_argument("--lr_schedule", type=str,
                     choices=['noam', 'noamwd', 'BERT', 'None'], default='noam')
 parser.add_argument("--loss_scale", type=float, default=0)
 parser.add_argument("--no_token_id", type=boolean_string, default=True)
+
+parser.add_argument("--pred_temperature", type=float, default=1)
+parser.add_argument("--top_k", type=int, default=0)
+parser.add_argument("--top_p", type=float, default=0.9)
 
 parser.add_argument("--output_dir", type=str)
 parser.add_argument("--log_dir", type=str)
@@ -160,7 +168,6 @@ logger.info('Input Argument Information')
 args_dict = vars(args)
 for a in args_dict:
     logger.info('%-28s  %s' % (a, args_dict[a]))
-
 
 #########################################################################
 # Prepare Data Set
@@ -367,6 +374,9 @@ while True:
                         file=eval_logger)
                     logger.info('current learning rate: '
                                 + str(optimizer.param_groups[0]['lr']))
+
+                    pred_filename = join(output_dir, f'GP2-pretrain-step-{global_step}')
+                    predict(model, enc, args, pred_filename)
                     model.train()
             if global_step >= args.num_optim_steps:
                 break

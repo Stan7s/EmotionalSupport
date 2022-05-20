@@ -163,8 +163,11 @@ def main(args):
         chunk = []
         n_chunk = 0
         n_example = 0
-        for line in tqdm(reader, total=_get_file_len(args.corpus)):
+        # idx = 0
+        for line in tqdm(reader, total=_get_file_len(args.corpus)):     
             try:
+                # print(f"line #{idx}")
+                # idx += 1
                 if len(chunk) >= args.chunk_size:
                     # save and renew chunk
                     db[f'chunk_{n_chunk}'] = gzip.compress(
@@ -173,6 +176,8 @@ def main(args):
                     n_chunk += 1
 
                 weights, inputs = _get_inputs_from_text(line, toker)
+                # print("weights:", weights)
+                # print("inputs:", inputs)
                 if args.reverse:
                     weights = list(reversed(weights))
                     inputs = list(reversed(inputs))
