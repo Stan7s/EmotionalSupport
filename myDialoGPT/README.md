@@ -16,10 +16,14 @@ pip install git+https://github.com/Maluuba/nlg-eval.git@master
 nlg-eval --setup
 ```
 
+### Model
+- DialoGPT medium model: Loacated under `model/medium/` (need to copy `pytorch_model.bin` from BOX)
+- Output models: will be located under `model/output_models/`
+
 ### Data
 - Located under `data/`
 - Dummy data for test: `data/dummy/`
-- Full training data: `data/0518/` (need to copy from BOX)
+- Full training data: `data/0518/` (need to copy `0518/` from BOX)
   - full_0_-3
   - full_5_-3
   - full_10_-3
