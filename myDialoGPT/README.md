@@ -37,5 +37,5 @@ bash scripts/demo_train.sh # Dummy data
 bash scripts/train.sh # Full data
 ```
 
-[1]https://notredame.app.box.com/folder/163443565826
+[1] https://notredame.app.box.com/folder/163443565826
 [2] https://notredame.app.box.com/folder/163290643660
