@@ -33,8 +33,8 @@ nlg-eval --setup
 ### RUN
 ```
 conda activate LSP
-bash scripts/demo_train.sh # Dummy data
 
+bash scripts/demo_train.sh # Dummy data
 bash scripts/0518/{SCRIPT_NAME}.sh # Full data
 ```
 
