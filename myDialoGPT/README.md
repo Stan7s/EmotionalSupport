@@ -17,7 +17,7 @@ nlg-eval --setup
 ```
 
 ### Model
-- DialoGPT medium model: Loacated under `model/medium/` (need to copy `pytorch_model.bin` from BOX)
+- DialoGPT model (medium): Loacated under `model/medium/` (need to copy `pytorch_model.bin` from BOX)
 - Output models: will be located under `model/output_models/`
 
 ### Data
