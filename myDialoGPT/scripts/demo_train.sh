@@ -14,7 +14,7 @@ PRED_INPUT_FILE="data/dummy/pred.tsv"
 
 OUTPUT_DIR="models/output_model/dummy/"
 
-CUDA_VISIBLE_DEVICES=0 /afs/crc.nd.edu/user/l/ltong2/.conda/envs/LSP/bin/python LSP_train.py \
+CUDA_VISIBLE_DEVICES=2 /afs/crc.nd.edu/user/l/ltong2/.conda/envs/LSP/bin/python LSP_train.py \
     --model_name_or_path $MODEL_NAME_OR_PATH \
     --init_checkpoint $INIT_CHECKPOINT \
     --train_input_file $TRAIN_INPUT_FILE \
