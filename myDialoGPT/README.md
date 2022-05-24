@@ -33,8 +33,9 @@ nlg-eval --setup
 ### RUN
 ```
 conda activate LSP
+
 bash scripts/demo_train.sh # Dummy data
-bash scripts/train.sh # Full data
+bash scripts/0518/{SCRIPT_NAME}.sh # Full data
 ```
 
 - [1] https://notredame.app.box.com/folder/163443565826
