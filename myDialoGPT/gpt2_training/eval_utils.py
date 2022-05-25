@@ -205,12 +205,20 @@ def predict(model, enc, args, pred_filename):
     
     df['pred_target'] = pred_target_list
     df.to_csv(pred_filename + '.pred.tsv', sep = '\t', index = False)
+    try:
+        n = NLGEval(metrics_to_omit=['SkipThoughtCS', 'EmbeddingAverageCosineSimilarity', 'VectorExtremaCosineSimilarity','GreedyMatchingScore'])
+        metrics_dict = n.compute_metrics([target_list], pred_target_list)
 
+<<<<<<< HEAD
     n = NLGEval(metrics_to_omit=['METEOR', 'CIDEr', 'SkipThoughtCS', 'EmbeddingAverageCosineSimilarity', 'VectorExtremaCosineSimilarity','GreedyMatchingScore'])
     metrics_dict = n.compute_metrics([target_list], pred_target_list)
+=======
+        with open(pred_filename + '.nlgeval.txt', 'w') as f: 
+            for key, value in metrics_dict.items(): 
+                f.write('%s:%s\n' % (key, value))
+    except:
+        pass
+>>>>>>> 359932b72f11c576c5b335593d4a2498e87d4a2d
 
-    with open(pred_filename + '.nlgeval.txt', 'w') as f: 
-        for key, value in metrics_dict.items(): 
-            f.write('%s:%s\n' % (key, value))
 
 
